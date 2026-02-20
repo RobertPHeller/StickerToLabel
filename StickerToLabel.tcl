@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : 2026-02-17 10:49:35
-#  Last Modified : <260219.1345>
+#  Last Modified : <260220.1541>
 #
 #  Description	
 #
@@ -50,13 +50,12 @@ snit::type StickerToLabel {
 %%Title: @TITLE@
 %%Creator: StickerToLabel
 %%CreationDate: @DATE@
-%%BoundingBox: 14 14 136 567 
+%%BoundingBox: 14 14 154 270 
 %%DocumentData: Clean7Bit
-%%Orientation: Landscape
+%%Orientation: Portait
 %%Pages: 1
 %%PageOrder: Ascend
-%%DocumentMedia: X48MMY297MM 164 595 0 () ()
-%%DocumentNeededResources: font Courier
+%%DocumentNeededResources: font Helvetica
 %%DocumentProcessColors: Black 
 %%EndComments
 %%BeginProlog
@@ -65,12 +64,13 @@ snit::type StickerToLabel {
 %%EndSetup
 %%Page: (1) 1
 %%BeginPageSetup
-/Courier findfont 20 scalefont setfont
+/Helvetica findfont 10 scalefont setfont
 90 rotate 0 -164 translate
 %%EndPageSetup
 }
-    typemethod SendPreamble {title} {
-        puts [regsub {@TITLE@} [regsub {@DATE@} $_Preamble [clock format [clock seconds]]] $title]
+    typevariable PRINTER {|lp -d Thermal -o media=X48MMY105MM}
+    typemethod SendPreamble {title {out stdout}} {
+        puts $out [regsub {@TITLE@} [regsub {@DATE@} $_Preamble [clock format [clock seconds]]] $title]
     }
     
     typemethod ShortenVersionInfoLine {line} {
@@ -82,20 +82,25 @@ snit::type StickerToLabel {
     }
     
     typemethod Main {filename} {
-        $type SendPreamble $filename
+        set lpfp [open $PRINTER w]
+        $type SendPreamble $filename $lpfp
         set fp [open $filename r]
-        set y [expr {(164-(14+20))}]
+        set y [expr {(164-(14+10))}]
         while {[gets $fp line] >= 0} {
-            puts "14 $y moveto ([$type ShortenVersionInfoLine $line]) show"
-            set y [expr {$y - 20}]
+            puts $lpfp "14 $y moveto ([$type ShortenVersionInfoLine $line]) show"
+            set y [expr {$y - 10}]
         }
         close $fp
-        puts "showpage"
-        puts "%%Trailer"
-        puts "%%EOF"
+        puts $lpfp "showpage"
+        puts $lpfp "%%Trailer"
+        puts $lpfp "%%EOF"
+        close $lpfp
     }
         
         
 }
 
-StickerToLabel Main Sticker.out
+if {$argc > 0} {
+    StickerToLabel Main [lindex $argv 0]
+}
+
